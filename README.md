@@ -16,43 +16,29 @@
 ## Contenu du dépôt
 
 ```
-tbs_dissertation_package/
+master-dissertation-tbs-esg/
 ├── README.md                       <- Ce fichier
 ├── requirements.txt                <- Bibliothèques Python nécessaires
 │
 ├── scripts/                        <- Code source Python
 │   ├── analyse_esg.py             <- Pipeline principal (≈550 lignes)
 │   ├── analyse_extensions.py      <- Section 3.7 : crises, sectoriel, flux, macro
-│   └── analyse_macro.py           <- Régressions macro HAC Newey-West
+│   └── analyse_macro.py           <- Contexte macro : taux directeurs Fed/BCE + flux ESG (offline)
 │
-├── data_lseg/                      <- Données primaires brutes
-│   ├── etfs/                      <- 11 fichiers extraits, 10 retenus (LSEG Workspace)
-│   │   ├── SPY.xlsx
-│   │   ├── VTI.xlsx
-│   │   ├── ESGU.xlsx
-│   │   ├── ESGV.xlsx
-│   │   ├── SUSA.xlsx
-│   │   ├── DSI.xlsx
-│   │   ├── SUSL.xlsx
-│   │   ├── VEA.xlsx
-│   │   ├── IEFA.xlsx
-│   │   ├── ESGD.xlsx
-│   │   └── VSGX.xlsx
-│   │
-│   ├── macro/                     <- Indicateurs macroéconomiques
-│   │   ├── US_10_Y.xlsx           <- Taux 10Y US (LSEG)
-│   │   ├── US10YT_RR.xlsx         <- Variante alternative
-│   │   ├── CLc1.xlsx              <- WTI Oil (LSEG / NYMEX)
-│   │   └── DXY.xlsx               <- US Dollar Index (LSEG / ICE)
-│   │
-│   ├── flux_esg.csv               <- Flux Morningstar (19 trimestres)
-│   ├── instructions_flux_esg.md   <- Documentation flux ESG
-│   └── prices_lseg_consolidated.xlsx  <- Données ETFs consolidées
-│
-└── outputs/                        <- Résultats générés
-    ├── figures/                   <- 10 figures PNG (150-300 DPI)
-    └── tables/                    <- Tableaux exportés
+└── data_lseg/                      <- Données fournies dans le dépôt
+    ├── prices_lseg_consolidated.xlsx  <- Prix/volumes/turnover des 10 ETFs (LSEG)
+    ├── flux_esg.csv               <- Flux Morningstar (20 trimestres, 2020-2024)
+    └── instructions_flux_esg.md   <- Documentation flux ESG
 ```
+
+> **Note sur les extraits LSEG bruts.** Les fichiers LSEG par ticker (prix
+> individuels des ETFs, taux 10Y, WTI, DXY) ne sont **pas redistribués** dans ce
+> dépôt public : les données LSEG Workspace sont propriétaires et leur usage est
+> limité au cadre du mémoire. Le fichier `prices_lseg_consolidated.xlsx` regroupe
+> les séries de prix effectivement utilisées. Pour une exécution publique sans
+> accès LSEG, les scripts téléchargent des séries équivalentes via yfinance.
+
+Les dossiers `outputs/` (figures et tableaux) sont générés à l'exécution des scripts.
 
 ---
 
@@ -72,12 +58,13 @@ tbs_dissertation_package/
 | **ECB Statistical Data Warehouse** | ECB Deposit Facility Rate | 2015-2025 |
 | **Kenneth French Data Library** | Facteurs Fama-French 3, 5 et Carhart MOM | 2020-2026 |
 
-> **Note sur la reproductibilité des indicateurs macro :** les fichiers LSEG
-> (taux 10Y, WTI, DXY) constituent la **source primaire archivée** dans
-> `data_lseg/macro/`. Pour permettre une exécution publique sans accès LSEG, le
-> script `analyse_extensions.py` télécharge des proxys équivalents via yfinance
-> (`^TNX` pour le 10Y, `CL=F` pour le WTI, `UUP` comme proxy du dollar). Les
-> résultats sont quasi identiques ; les fichiers LSEG restent la référence du mémoire.
+> **Note sur la reproductibilité des indicateurs macro :** les séries LSEG
+> (taux 10Y, WTI, DXY) constituent la **source primaire du mémoire**, non
+> redistribuée publiquement (licence LSEG). Pour permettre une exécution publique
+> sans accès LSEG, le script `analyse_extensions.py` télécharge des proxys
+> équivalents via yfinance (`^TNX` pour le 10Y, `CL=F` pour le WTI, `UUP` comme
+> proxy du dollar). Les résultats sont quasi identiques ; les séries LSEG restent
+> la référence du mémoire.
 
 ### Données secondaires (composition sectorielle)
 
@@ -99,9 +86,13 @@ tbs_dissertation_package/
 | **États-Unis** | SPY, VTI | ESGU, ESGV, SUSA, DSI |
 | **International (EAFE)** | VEA, IEFA | ESGD, SUSL |
 
-> Remarque : le fichier `VSGX.xlsx` figure dans `data_lseg/etfs/` (donnée collectée
-> lors de l'extraction LSEG) mais n'est **pas retenu** dans l'analyse finale, afin
-> de conserver un appariement équilibré ESG/conventionnel par zone géographique.
+> Note de classification — SUSL. Dans les scripts de ce dépôt, SUSL est rattaché au
+> panier EAFE, conformément à l'échantillon d'extraction initial qui a produit les
+> tableaux du mémoire (les chiffres du code reproduisent donc ceux du mémoire). À
+> noter que SUSL (iShares ESG MSCI USA Leaders) est en réalité un fonds à dominante
+> américaine (≈ 99 % d'actions US) ; cette limite de classification est reconnue et
+> discutée dans le mémoire. Un onzième ETF (VSGX), extrait lors de la collecte LSEG,
+> n'est pas retenu dans l'analyse finale.
 
 ### Date de rupture monétaire
 
@@ -128,7 +119,7 @@ tbs_dissertation_package/
 | # | Label | Énoncé | Verdict |
 |---|---|---|---|
 | **H1** | Illusion d'alpha ESG | La surperformance ESG pré-2022 est un biais factoriel (growth/large-cap/quality), pas un véritable alpha. | **Validée** (α ≈ 0 sur 6/6 régressions multifactorielles) |
-| **H2** | Prime de flux conditionnelle | La performance ESG-Conv est conditionnée par le régime de flux. | **Validée** (Δ Sharpe : +0,037 → -0,043 coïncide avec inflexion flux Morningstar) |
+| **H2** | Prime de flux conditionnelle | La performance ESG-Conv est conditionnée par le régime de flux. | **Validée** (Δ Sharpe US : +0,032 → −0,038 coïncide avec l'inflexion des flux Morningstar) |
 | **H3** | SFDR comme protection asymétrique | Le SFDR fonctionne comme un « put » implicite : protection en crise, pas génération d'alpha. | **Validée** (asymétrie ×17 vs US sur SVB) |
 
 ---
@@ -147,10 +138,10 @@ pip install -r requirements.txt
 # Pipeline principal (statistiques + régressions multifactorielles)
 python scripts/analyse_esg.py
 
-# Extensions (section 3.7 du mémoire)
+# Extensions (section 3.7 du mémoire) — sectoriel, crises, flux, régressions macro HAC Newey-West
 python scripts/analyse_extensions.py
 
-# Régressions macro avec HAC Newey-West
+# Graphiques de contexte : taux directeurs Fed/BCE (Figure 0) et flux ESG (Figure 1bis)
 python scripts/analyse_macro.py
 ```
 
@@ -169,9 +160,7 @@ python scripts/analyse_macro.py
 
 ## Reproductibilité
 
-Le script `analyse_esg.py` peut être exécuté en mode **autonome** (download Yahoo Finance + Fama-French Library) ou en mode **LSEG local** (lecture des fichiers `data_lseg/etfs/*.xlsx`). Le mode par défaut utilise yfinance pour la reproductibilité publique.
-
-Pour le mode LSEG local, dé-commenter la fonction `load_lseg_etf()` au début de `analyse_esg.py`.
+Le script `analyse_esg.py` s'exécute en mode **autonome** : il télécharge les prix via Yahoo Finance (yfinance) et les facteurs via la Kenneth French Data Library, ce qui garantit une reproductibilité publique sans accès LSEG. Le fichier `data_lseg/prices_lseg_consolidated.xlsx` fournit, à titre de référence, les séries de prix LSEG effectivement utilisées dans le mémoire.
 
 ---
 
@@ -188,4 +177,5 @@ Apprentissage : ALGIZ (France, Monaco, Allemagne)
 ## Licence
 
 Code distribué sous licence MIT pour usage académique et de recherche.
+Données financières propriétaires (LSEG Workspace) : usage limité au cadre du mémoire académique.erche.
 Données financières propriétaires (LSEG Workspace) : usage limité au cadre du mémoire académique.
